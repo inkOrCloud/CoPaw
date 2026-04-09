@@ -276,7 +276,7 @@ class TestSendMediaPartVideoFile:
 
 class TestSendMediaPartEdgeCases:
     @pytest.mark.asyncio
-    async def test_file_not_found_skips_upload(self, tmp_path):
+    async def test_file_not_found_skips_upload(self):
         ch = _make_channel()
         ch._client = MagicMock()
         ch._client.upload_media = AsyncMock()
