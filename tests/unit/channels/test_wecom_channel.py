@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=protected-access
 """Unit tests for WecomChannel (with inkOrCloud aibot SDK)."""
+
 from __future__ import annotations
 
-import asyncio
-import tempfile
-from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -13,7 +11,6 @@ import pytest
 
 from aibot import MediaType
 from copaw.app.channels.wecom.channel import WecomChannel
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -63,7 +60,7 @@ class TestStart:
         assert not hasattr(ch, "_upload_lock")
 
     def test_no_upload_ack_futures_attribute(self):
-        """_upload_ack_futures field must not exist after removing the workaround."""
+        """_upload_ack_futures must not exist after removing the workaround."""
         ch = _make_channel()
         assert not hasattr(ch, "_upload_ack_futures")
 
@@ -78,9 +75,14 @@ class TestStart:
         mock_client._ws_manager = mock_ws_mgr
         mock_client.connect = AsyncMock()
 
-        with patch("copaw.app.channels.wecom.channel.WSClient", return_value=mock_client), \
-             patch("copaw.app.channels.wecom.channel.WSClientOptions"), \
-             patch.object(ch, "_run_ws_forever"):
+        with (
+            patch(
+                "copaw.app.channels.wecom.channel.WSClient",
+                return_value=mock_client,
+            ),
+            patch("copaw.app.channels.wecom.channel.WSClientOptions"),
+            patch.object(ch, "_run_ws_forever"),
+        ):
             await ch.start()
 
         # The SDK's _send_heartbeat must remain untouched
@@ -97,9 +99,14 @@ class TestStart:
         mock_client._ws_manager = mock_ws_mgr
         mock_client.connect = AsyncMock()
 
-        with patch("copaw.app.channels.wecom.channel.WSClient", return_value=mock_client), \
-             patch("copaw.app.channels.wecom.channel.WSClientOptions"), \
-             patch.object(ch, "_run_ws_forever"):
+        with (
+            patch(
+                "copaw.app.channels.wecom.channel.WSClient",
+                return_value=mock_client,
+            ),
+            patch("copaw.app.channels.wecom.channel.WSClientOptions"),
+            patch.object(ch, "_run_ws_forever"),
+        ):
             await ch.start()
 
         assert mock_ws_mgr.on_message is original_handler
@@ -122,11 +129,14 @@ class TestSendMediaPartImage:
         ch._client.reply_image = AsyncMock()
 
         from agentscope_runtime.engine.schemas.agent_schemas import ContentType
+
         part = _make_content_part(ContentType.IMAGE, image_url=f"file://{img}")
         frame = _make_frame()
 
-        with patch("copaw.app.channels.wecom.channel.compress_image_for_wecom",
-                   return_value=(b"imgdata", "photo.png")):
+        with patch(
+            "copaw.app.channels.wecom.channel.compress_image_for_wecom",
+            return_value=(b"imgdata", "photo.png"),
+        ):
             await ch._send_media_part("", part, frame)
 
         ch._client.upload_media.assert_awaited_once()
@@ -146,14 +156,18 @@ class TestSendMediaPartImage:
         ch._client.send_message = AsyncMock()
 
         from agentscope_runtime.engine.schemas.agent_schemas import ContentType
+
         part = _make_content_part(ContentType.IMAGE, image_url=f"file://{img}")
 
-        with patch("copaw.app.channels.wecom.channel.compress_image_for_wecom",
-                   return_value=(b"imgdata", "photo.jpg")):
+        with patch(
+            "copaw.app.channels.wecom.channel.compress_image_for_wecom",
+            return_value=(b"imgdata", "photo.jpg"),
+        ):
             await ch._send_media_part("user123", part, None)
 
         ch._client.send_message.assert_awaited_once_with(
-            "user123", {"msgtype": "image", "image": {"media_id": "mediaxyz"}}
+            "user123",
+            {"msgtype": "image", "image": {"media_id": "mediaxyz"}},
         )
 
 
@@ -174,8 +188,11 @@ class TestSendMediaPartAudio:
         ch._client.reply_voice = AsyncMock()
 
         from agentscope_runtime.engine.schemas.agent_schemas import ContentType
+
         part = _make_content_part(
-            ContentType.AUDIO, data=f"file://{amr}", file_url=""
+            ContentType.AUDIO,
+            data=f"file://{amr}",
+            file_url="",
         )
         await ch._send_media_part("", part, _make_frame())
 
@@ -194,8 +211,11 @@ class TestSendMediaPartAudio:
         ch._client.reply_file = AsyncMock()
 
         from agentscope_runtime.engine.schemas.agent_schemas import ContentType
+
         part = _make_content_part(
-            ContentType.AUDIO, data=f"file://{mp3}", file_url=""
+            ContentType.AUDIO,
+            data=f"file://{mp3}",
+            file_url="",
         )
         await ch._send_media_part("", part, _make_frame())
 
@@ -221,6 +241,7 @@ class TestSendMediaPartVideoFile:
         ch._client.reply_video = AsyncMock()
 
         from agentscope_runtime.engine.schemas.agent_schemas import ContentType
+
         part = _make_content_part(ContentType.VIDEO, video_url=f"file://{vid}")
         await ch._send_media_part("", part, _make_frame())
 
@@ -239,6 +260,7 @@ class TestSendMediaPartVideoFile:
         ch._client.reply_file = AsyncMock()
 
         from agentscope_runtime.engine.schemas.agent_schemas import ContentType
+
         part = _make_content_part(ContentType.FILE, file_url=f"file://{doc}")
         await ch._send_media_part("", part, _make_frame())
 
@@ -260,6 +282,7 @@ class TestSendMediaPartEdgeCases:
         ch._client.upload_media = AsyncMock()
 
         from agentscope_runtime.engine.schemas.agent_schemas import ContentType
+
         part = _make_content_part(
             ContentType.IMAGE,
             image_url="file:///nonexistent/path/img.png",
@@ -275,14 +298,19 @@ class TestSendMediaPartEdgeCases:
         img.write_bytes(b"\x89PNG" + b"0" * 50)
 
         ch._client = MagicMock()
-        ch._client.upload_media = AsyncMock(side_effect=RuntimeError("upload err"))
+        ch._client.upload_media = AsyncMock(
+            side_effect=RuntimeError("upload err"),
+        )
         ch._client.reply_image = AsyncMock()
 
         from agentscope_runtime.engine.schemas.agent_schemas import ContentType
+
         part = _make_content_part(ContentType.IMAGE, image_url=f"file://{img}")
 
-        with patch("copaw.app.channels.wecom.channel.compress_image_for_wecom",
-                   return_value=(b"data", "img.png")):
+        with patch(
+            "copaw.app.channels.wecom.channel.compress_image_for_wecom",
+            return_value=(b"data", "img.png"),
+        ):
             await ch._send_media_part("", part, _make_frame())
 
         ch._client.reply_image.assert_not_awaited()
@@ -293,7 +321,11 @@ class TestSendMediaPartEdgeCases:
         ch._client = None
 
         from agentscope_runtime.engine.schemas.agent_schemas import ContentType
-        part = _make_content_part(ContentType.IMAGE, image_url="file:///some/img.png")
+
+        part = _make_content_part(
+            ContentType.IMAGE,
+            image_url="file:///some/img.png",
+        )
         # Must not raise
         await ch._send_media_part("", part, _make_frame())
 
@@ -323,6 +355,7 @@ class TestSendMediaPartEdgeCases:
         ch._client.reply_file = AsyncMock()
 
         from agentscope_runtime.engine.schemas.agent_schemas import ContentType
+
         part = _make_content_part(ContentType.FILE, file_url=f"file://{doc}")
         await ch._send_media_part("", part, _make_frame())
 

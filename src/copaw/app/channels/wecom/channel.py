@@ -48,7 +48,6 @@ logger = logging.getLogger(__name__)
 _WECOM_PROCESSED_IDS_MAX = 2000
 
 
-
 class WecomChannel(BaseChannel):
     """WeCom AI Bot channel: WebSocket receive and send.
 
@@ -107,8 +106,6 @@ class WecomChannel(BaseChannel):
         # message_id dedup (ordered dict, trimmed when over limit)
         self._processed_message_ids: OrderedDict[str, None] = OrderedDict()
         self._processed_ids_lock = threading.Lock()
-
-
 
     @classmethod
     def from_env(
@@ -620,7 +617,10 @@ class WecomChannel(BaseChannel):
 
         try:
             media_id = await self._client.upload_media(
-                data, filename, sdk_media_type, md5=md5
+                data,
+                filename,
+                sdk_media_type,
+                md5=md5,
             )
         except Exception:
             logger.exception("wecom: upload_media failed, skipping media part")
@@ -637,7 +637,8 @@ class WecomChannel(BaseChannel):
                 else:
                     await self._client.reply_file(frame, media_id)
             elif chatid:
-                mt = sdk_media_type.value  # "image" / "voice" / "video" / "file"
+                # "image" / "voice" / "video" / "file"
+                mt = sdk_media_type.value
                 await self._client.send_message(
                     chatid,
                     {"msgtype": mt, mt: {"media_id": media_id}},
